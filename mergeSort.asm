@@ -42,88 +42,78 @@ merge_sort:
     jle .done
 
     ; Find midpoint
-    shr ecx, 1            ; Midpoint = size / 2
+    mov ebx, ecx
+    shr ebx, 1            ; Midpoint = size / 2
 
     ; Recursively sort the first half
-    push ecx              ; size / 2
+    push ebx              ; size / 2
     push esi              ; array pointer
     call merge_sort
     add esp, 8
 
     ; Recursively sort the second half
-    mov ebx, esi          ; array pointer
-    add ebx, ecx          ; Move to second half
-    push [ebp+12]         ; size
-    sub dword [esp], ecx  ; size - size / 2
-    push ebx              ; second half array pointer
+    lea esi, [esi+ebx]    ; Move to second half
+    push ecx              ; size
+    sub dword [esp], ebx  ; size - size / 2
+    push esi              ; second half array pointer
     call merge_sort
     add esp, 8
 
     ; Merge sorted halves
-    mov eax, esi          ; array pointer
-    mov ebx, ecx          ; midpoint
-    add eax, ebx          ; second half pointer
-    mov edi, [ebp+8]      ; array pointer
-    mov ecx, [ebp+12]     ; size
+    mov esi, [ebp+8]      ; array pointer
+    lea edi, [esi+ebx]    ; second half pointer
+    mov ecx, ebx          ; midpoint
+    mov edx, [ebp+12]     ; array size
+    sub edx, ecx          ; size - midpoint
 
-    ; Merge process
-    mov edx, ebx          ; index of the second half
     xor ebx, ebx          ; index of the first half
     xor esi, esi          ; index of the temp array
 
 .merge_loop:
-    cmp ebx, edx          ; If first half is exhausted
+    cmp ebx, ecx          ; If first half is exhausted
     jge .copy_second_half
 
-    cmp edx, ecx          ; If second half is exhausted
+    cmp esi, edx          ; If second half is exhausted
     jge .copy_first_half
 
-    mov al, [edi+ebx]     ; Compare elements
-    cmp al, [edi+ebx+ebx]
+    mov al, [array + ebx]
+    mov ah, [temp + esi]
+    cmp al, ah
     jle .copy_first_half_element
 
     ; Copy element from second half
-    mov al, [edi+ebx+ebx]
-    mov [edi+esi], al
+    mov [temp + esi], ah
+    inc esi
     inc edx
-    jmp .increment_esi
+    jmp .merge_loop
 
 .copy_first_half_element:
     ; Copy element from first half
-    mov al, [edi+ebx]
-    mov [edi+esi], al
-    inc ebx
-
-.increment_esi:
+    mov [temp + esi], al
     inc esi
-    cmp esi, ecx
-    jl .merge_loop
-
-.copy_first_half:
-    ; Copy remaining elements from the first half
-    cmp ebx, edx
-    jge .merge_done
-
-    mov al, [edi+ebx]
-    mov [edi+esi], al
     inc ebx
-    inc esi
-    jmp .copy_first_half
+    jmp .merge_loop
 
 .copy_second_half:
     ; Copy remaining elements from the second half
-    cmp edx, ecx
-    jge .merge_done
-
-    mov al, [edi+edx]
-    mov [edi+esi], al
-    inc edx
+    mov ah, [array + edx]
+    mov [temp + esi], ah
     inc esi
-    jmp .copy_second_half
+    inc edx
+    cmp esi, [ebp+12]     ; check if all elements are merged
+    jl .copy_second_half
 
-.merge_done:
+.copy_first_half:
+    ; Copy remaining elements from the first half
+    mov al, [array + ebx]
+    mov [temp + esi], al
+    inc esi
+    inc ebx
+    cmp esi, [ebp+12]     ; check if all elements are merged
+    jl .copy_first_half
+
     ; Copy sorted elements back to the original array
-    mov esi, [ebp+8]
+    mov esi, array
     mov edi, temp
     mov ecx, [ebp+12]
 
