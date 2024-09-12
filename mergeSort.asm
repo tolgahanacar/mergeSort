@@ -11,7 +11,7 @@ section .text
     global _start
 
 _start:
-    ; Initialize the array pointers and size
+    ; Call merge sort
     mov esi, array        ; Source array
     mov edi, temp         ; Temp array
     mov ecx, array_size   ; Number of elements
